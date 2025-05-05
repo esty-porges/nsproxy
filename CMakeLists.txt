@@ -124,7 +124,9 @@ add_custom_target(generate_python_grpc ALL
 
 # --- Build the Server Executable ---
 # Add executable and include generated sources directly
-add_executable(matrix_server proxy_server/matrix_server.cpp # Updated path with .cpp extension
+add_executable(matrix_server 
+    proxy_server/proxy_server.cpp   # Main server file
+    proxy_server/matrix_service.cpp # Service implementation file
     ${PROTO_SRCS} ${PROTO_HDRS}
     ${GRPC_SRCS} ${GRPC_HDRS} # Include manually generated gRPC sources/headers
 )
@@ -132,6 +134,7 @@ add_executable(matrix_server proxy_server/matrix_server.cpp # Updated path with 
 # Add include directories
 target_include_directories(matrix_server PUBLIC
     ${PROTO_GEN_DIR} # For generated headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/proxy_server # For matrix_service.h
     # Conan handles Protobuf/gRPC include dirs via targets
 )
 
