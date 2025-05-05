@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package matrix_service;
+
+// The service definition.
+service MatrixService {
+  // Loads a matrix from a file (server-side path for simplicity here)
+  // In a real scenario, you might stream the file content or use a shared filesystem.
+  rpc LoadMatrixFromFile (LoadMatrixRequest) returns (MatrixInfoResponse) {}
+
+  // Creates a zero matrix
+  rpc CreateZeroMatrix (CreateZeroMatrixRequest) returns (MatrixInfoResponse) {}
+
+  // Gets the size of a matrix
+  rpc GetMatrixSize (GetMatrixSizeRequest) returns (MatrixSizeResponse) {}
+
+  // Maybe add a DeleteMatrix RPC later
+}
+
+// Request message for LoadMatrixFromFile
+message LoadMatrixRequest {
+  string matrix_name = 1;
+  string file_path = 2; // Server-side path in this example
+}
+
+// Request message for CreateZeroMatrix
+message CreateZeroMatrixRequest {
+  string matrix_name = 1;
+  int32 rows = 2;
+  int32 cols = 3;
+}
+
+// Request message for GetMatrixSize
+message GetMatrixSizeRequest {
+  string matrix_name = 1;
+}
+
+// Response message containing matrix info (used by Load and Create)
+message MatrixInfoResponse {
+  string matrix_name = 1;
+  int32 rows = 2;
+  int32 cols = 3;
+  bool success = 4;
+  string error_message = 5; // Optional error details
+}
+
+// Response message for GetMatrixSize
+message MatrixSizeResponse {
+  int32 rows = 1;
+  int32 cols = 2;
+  bool success = 3;
+  string error_message = 4; // Optional error details
+}

@@ -1,0 +1,10 @@
+[requires]
+protobuf/3.21.12 # Or specify the version you need
+grpc/1.54.3     # Add gRPC requirement
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[layout]
+cmake_layout
