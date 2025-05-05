@@ -124,7 +124,7 @@ add_custom_target(generate_python_grpc ALL
 
 # --- Build the Server Executable ---
 # Add executable and include generated sources directly
-add_executable(matrix_server proxy_server/matrix_server.cc # Updated path
+add_executable(matrix_server proxy_server/matrix_server.cpp # Updated path with .cpp extension
     ${PROTO_SRCS} ${PROTO_HDRS}
     ${GRPC_SRCS} ${GRPC_HDRS} # Include manually generated gRPC sources/headers
 )
