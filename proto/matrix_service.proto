@@ -15,6 +15,9 @@ service MatrixService {
   rpc GetMatrixSize (GetMatrixSizeRequest) returns (MatrixSizeResponse) {}
 
   // Maybe add a DeleteMatrix RPC later
+
+  // Lists all currently registered objects.
+  rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
 }
 
 // Request message for LoadMatrixFromFile
@@ -50,4 +53,18 @@ message MatrixSizeResponse {
   int32 cols = 2;
   bool success = 3;
   string error_message = 4; // Optional error details
+}
+
+// Request message for ListObjects (currently empty)
+message ListObjectsRequest {}
+
+// Information about a single registered object
+message ObjectInfo {
+  string name = 1;
+  string type = 2; // Type as a string (e.g., "Matrix")
+}
+
+// Response message for ListObjects
+message ListObjectsResponse {
+  repeated ObjectInfo objects = 1;
 }

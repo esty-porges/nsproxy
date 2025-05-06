@@ -16,6 +16,10 @@ public:
 
     grpc::Status GetMatrixSize(grpc::ServerContext* context, const matrix_service::GetMatrixSizeRequest* request,
                                matrix_service::MatrixSizeResponse* response) override;
+
+    // New method declaration
+    grpc::Status ListObjects(grpc::ServerContext* context, const matrix_service::ListObjectsRequest* request,
+                             matrix_service::ListObjectsResponse* response) override;
 };
 
 #endif // MATRIX_SERVICE_H

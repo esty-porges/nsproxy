@@ -1,3 +1,21 @@
+# First MVP
+# 1. Run the server with:
+#  * Load matrix from csv
+#  * Create Zero matrix
+#  * Create ID matrix
+#  * List Matrices
+#  * Matrix Transpose
+#  * Check for equality of 2 Matrices
+#  * Sum 2 matrices
+#  * Mult 2 matrices into a third one
+# 2. Random number generation on device
+#   * Create Array
+#   * Copy Array to device
+#   * Random generation
+#   * Copy Array Back to host
+#   * Send Array to python.
+
+
 # Some info on how to compile on dev server:
 
 Remove the system module for openSSL before installing conan grpc

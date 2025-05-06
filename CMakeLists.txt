@@ -127,6 +127,7 @@ add_custom_target(generate_python_grpc ALL
 add_executable(matrix_server 
     proxy_server/proxy_server.cpp   # Main server file
     proxy_server/matrix_service.cpp # Service implementation file
+    proxy_server/object_manager.cpp # Object manager implementation file
     ${PROTO_SRCS} ${PROTO_HDRS}
     ${GRPC_SRCS} ${GRPC_HDRS} # Include manually generated gRPC sources/headers
 )
