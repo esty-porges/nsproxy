@@ -139,15 +139,31 @@ class NSProxy:
 
 # Example Usage (optional, for testing)
 if __name__ == '__main__':
+    # Read port from config.json
+    import json
+    import os
+
+    # Get the directory containing this script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(current_dir, '..', 'config.json')
+    
+    try:
+        with open(config_path) as f:
+            config = json.load(f)
+            port = config.get('port', 50051)  # default to 50051 if not found
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Warning: Could not read config file, using default port 50051: {e}")
+        port = 50051
+
     # Address of the running gRPC server
-    server_addr = "localhost:50051"
+    server_addr = f"localhost:{port}"
 
     # Use a context manager to ensure the channel is closed
     with NSProxy(server_addr) as proxy:
 
         # Example calls
-        # Note: Assumes the server has access to this path
-        matrix_obj = proxy.load_matrix_from_file("my_matrix_from_file", "/path/on/server/matrix.csv")
+        # Load matrix from our test CSV file
+        matrix_obj = proxy.load_matrix_from_file("test_matrix", "test_matrix.csv")
         if matrix_obj:
             print(f"Created matrix object: {matrix_obj}")
             rows, cols = matrix_obj.get_size()

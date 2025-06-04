@@ -1,6 +1,7 @@
 [requires]
 protobuf/3.21.12 # Or specify the version you need
 grpc/1.54.3     # Add gRPC requirement
+nlohmann_json/3.11.2
 
 [generators]
 CMakeDeps

@@ -1,7 +1,9 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <fstream>
 #include <grpcpp/grpcpp.h>
+#include <nlohmann/json.hpp>
 
 // Forward declaration or include the header for MatrixServiceImpl
 // Assuming MatrixServiceImpl is defined in matrix_service.cpp/h
@@ -11,7 +13,26 @@ using grpc::Server;
 using grpc::ServerBuilder;
 
 void RunServer() {
-    std::string server_address("0.0.0.0:50051"); // Listen on all interfaces, port 50051
+    // Read port from config.json
+    int port = 50051; // default port
+    std::string config_path = std::string(getenv("PWD")) + "/config.json";
+    std::ifstream config_file(config_path);
+    std::cout << "Looking for config file at: " << config_path << std::endl;
+    if (config_file.is_open()) {
+        try {
+            nlohmann::json config;
+            config_file >> config;
+            if (config.contains("port")) {
+                port = config["port"].get<int>();
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error reading config file: " << e.what() << std::endl;
+        }
+    } else {
+        std::cout << "Using default port " << port << " (config.json not found)" << std::endl;
+    }
+
+    std::string server_address = "0.0.0.0:" + std::to_string(port);
     MatrixServiceImpl matrix_service; // Instance of the service implementation
 
     ServerBuilder builder;
@@ -22,6 +43,11 @@ void RunServer() {
     builder.RegisterService(&matrix_service);
     // Finally assemble the server.
     std::unique_ptr<Server> server(builder.BuildAndStart());
+    if (!server) {
+        std::cerr << "Failed to start server on " << server_address << std::endl;
+        return;
+    }
+    
     std::cout << "Server listening on " << server_address << std::endl;
 
     // Wait for the server to shutdown. Note that some other thread must be

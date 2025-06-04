@@ -28,5 +28,9 @@ module del OpenSSL
 . ./venv/bin/activate
  conan install . --output-folder=build --build=missing
  cmake . --preset conan-release
+ 
+ cmake --build --preset conan-release
+ ./build/build/Release/matrix_server 
+
  cd build/build/Release/
  cmake --build . 

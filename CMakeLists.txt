@@ -1,6 +1,21 @@
 cmake_minimum_required(VERSION 3.15) # Recommended minimum for better Conan integration
 project(MatrixServer CXX)
 
+# Include Conan configuration
+include(${CMAKE_BINARY_DIR}/generators/conan_toolchain.cmake OPTIONAL RESULT_VARIABLE CONAN_TOOLCHAIN_FOUND)
+if(NOT CONAN_TOOLCHAIN_FOUND)
+    message(FATAL_ERROR "Conan toolchain not found. Please run 'conan install . --output-folder=build --build=missing' first")
+endif()
+
+find_package(nlohmann_json REQUIRED)
+
+# Set CONAN_HOME environment variable
+set(ENV{CONAN_HOME} "${CMAKE_CURRENT_SOURCE_DIR}/../conan_cache")
+
+# Include Conan-generated configurations
+include(${CMAKE_BINARY_DIR}/generators/cmakedeps_macros.cmake)
+include(${CMAKE_BINARY_DIR}/generators/nlohmann_json-config.cmake)
+
 # --- Compiler Setup ---
 # Use clang++
 set(CMAKE_CXX_COMPILER "clang++")
@@ -146,6 +161,7 @@ target_link_libraries(matrix_server PUBLIC
     gRPC::grpc++            # gRPC C++ library from Conan
     OpenSSL::SSL            # Explicitly link OpenSSL SSL
     OpenSSL::Crypto         # Explicitly link OpenSSL Crypto
+    nlohmann_json::nlohmann_json  # JSON library from Conan
 )
 
 # Add dependency for Python generation (if needed, depends on workflow)
