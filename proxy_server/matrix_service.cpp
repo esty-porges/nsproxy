@@ -5,6 +5,8 @@
 #include <map>
 #include <grpcpp/grpcpp.h>
 
+#include "matrix_operations.h"  // For matrix multiplication operations
+
 // Generated headers
 #include "matrix_service.grpc.pb.h"
 #include "matrix_service.h" // Include the header for the service implementation
@@ -26,7 +28,30 @@ struct MatrixData {
     std::string name;
     int rows;
     int cols;
-    // std::vector<double> data; // Add actual data storage if needed
+    std::unique_ptr<float[]> data;  // Smart pointer for matrix data
+
+    MatrixData(const std::string& n, int r, int c) 
+        : name(n)
+        , rows(r)
+        , cols(c)
+        , data(std::make_unique<float[]>(r * c)) {
+        // Initialize with zeros
+        std::fill(data.get(), data.get() + (r * c), 0.0f);
+    }
+
+    // No need for custom destructor - unique_ptr handles it
+
+    // No need for custom move constructor - unique_ptr handles it
+    MatrixData(MatrixData&&) = default;
+    MatrixData& operator=(MatrixData&&) = default;
+
+    // Get raw pointer for matrix operations
+    float* get_data() { return data.get(); }
+    const float* get_data() const { return data.get(); }
+
+    // Prevent copying
+    MatrixData(const MatrixData&) = delete;
+    MatrixData& operator=(const MatrixData&) = delete;
 };
 
 // In-memory storage for matrices (replace with your actual storage mechanism)
@@ -56,16 +81,26 @@ grpc::Status MatrixServiceImpl::LoadMatrixFromFile(ServerContext* context, const
     // 4. Store the matrix data (e.g., in matrix_storage or your system).
     // 5. Handle file not found, parsing errors, etc.
 
-    // Simple placeholder: Assume loading is successful and deduce dummy dimensions.
-    // You MUST replace this with actual file reading and dimension detection.
-    int placeholder_rows = 3; // Replace with actual rows from file
-    int placeholder_cols = 4; // Replace with actual cols from file
+    // TODO: Replace with actual file reading and dimension detection
+    int rows = 3; // Will come from reading the CSV file
+    int cols = 4; // Will come from reading the CSV file
 
-    matrix_storage[matrix_name] = {matrix_name, placeholder_rows, placeholder_cols};
+    // Create new matrix with the given dimensions
+    auto [it, inserted] = matrix_storage.try_emplace(matrix_name, matrix_name, rows, cols);
+    if (!inserted) {
+        response->set_success(false);
+        response->set_error_message("Failed to create matrix storage");
+        return Status(grpc::StatusCode::INTERNAL, "Failed to create matrix storage");
+    }
+
+    // TODO: Here we would read the CSV file and fill the matrix data
+    // For example:
+    // float* data = it->second.get_data();
+    // read_csv_into_array(file_path, data, rows, cols);
 
     response->set_matrix_name(matrix_name);
-    response->set_rows(placeholder_rows);
-    response->set_cols(placeholder_cols);
+    response->set_rows(rows);
+    response->set_cols(cols);
     response->set_success(true); // Assume success for placeholder
     // --- End Placeholder ---
 
@@ -117,8 +152,13 @@ grpc::Status MatrixServiceImpl::CreateZeroMatrix(ServerContext* context, const m
     // Removed the check here: if (matrix_storage.count(matrix_name)) { ... }
     // as ObjectManager handles the existence check now.
 
-    matrix_storage[matrix_name] = {matrix_name, rows, cols};
-    // Allocate actual zero data if needed here
+    // Create new zero matrix (constructor initializes with zeros)
+    auto [it, inserted] = matrix_storage.try_emplace(matrix_name, matrix_name, rows, cols);
+    if (!inserted) {
+        response->set_success(false);
+        response->set_error_message("Failed to create matrix storage");
+        return Status(grpc::StatusCode::INTERNAL, "Failed to create matrix storage");
+    }
 
     response->set_matrix_name(matrix_name);
     response->set_rows(rows);
@@ -173,7 +213,76 @@ grpc::Status MatrixServiceImpl::GetMatrixSize(ServerContext* context, const matr
     return Status::OK;
 }
 
-// New method implementation
+grpc::Status MatrixServiceImpl::MultiplyMatrices(ServerContext* context, 
+    const matrix_service::MultiplyMatricesRequest* request,
+    matrix_service::MatrixInfoResponse* response) {
+    const auto& matrix_a_name = request->matrix_a_name();
+    const auto& matrix_b_name = request->matrix_b_name();
+    const auto& result_name = request->result_name();
+    bool use_transpose = request->use_transpose();
+
+    if (ObjectManager::instance().is_registered(result_name)) {
+        response->set_success(false);
+        response->set_error_message("Result matrix already exists");
+        return Status(grpc::StatusCode::ALREADY_EXISTS, "Result matrix exists");
+    }
+
+    auto it_a = matrix_storage.find(matrix_a_name);
+    auto it_b = matrix_storage.find(matrix_b_name);
+    if (it_a == matrix_storage.end() || it_b == matrix_storage.end()) {
+        response->set_success(false);
+        response->set_error_message("Input matrix not found");
+        return Status(grpc::StatusCode::NOT_FOUND, "Matrix not found");
+    }
+
+    if (it_a->second.cols != it_b->second.rows) {
+        response->set_success(false);
+        response->set_error_message("Matrix dimensions mismatch");
+        return Status(grpc::StatusCode::INVALID_ARGUMENT, "Dimensions mismatch");
+    }
+
+    auto [it_result, inserted] = matrix_storage.try_emplace(result_name, 
+        result_name, it_a->second.rows, it_b->second.cols);
+    if (!inserted) {
+        response->set_success(false);
+        response->set_error_message("Failed to create result matrix");
+        return Status(grpc::StatusCode::INTERNAL, "Creation failed");
+    }
+
+    if (use_transpose) {
+        std::unique_ptr<float[]> B_T = std::make_unique<float[]>(it_b->second.rows * it_b->second.cols);
+        matrix_ops::mult_transpose(
+            it_a->second.get_data(),
+            it_b->second.get_data(),
+            B_T.get(),
+            it_result->second.get_data(),
+            it_a->second.rows
+        );
+    } else {
+        matrix_ops::mult_omp(
+            it_a->second.get_data(),
+            it_b->second.get_data(),
+            it_result->second.get_data(),
+            it_a->second.rows
+        );
+    }
+
+    if (!ObjectManager::instance().register_object(result_name)) {
+        matrix_storage.erase(result_name);
+        response->set_success(false);
+        response->set_error_message("Failed to register result matrix");
+        return Status(grpc::StatusCode::INTERNAL, "Registration failed");
+    }
+
+    response->set_success(true);
+    response->set_matrix_name(result_name);
+    response->set_rows(it_result->second.rows);
+    response->set_cols(it_result->second.cols);
+
+    return Status::OK;
+}
+
+// List objects implementation
 grpc::Status MatrixServiceImpl::ListObjects(ServerContext* context, const ListObjectsRequest* request,
                                             ListObjectsResponse* response) {
     std::cout << "Received request to list objects." << std::endl;

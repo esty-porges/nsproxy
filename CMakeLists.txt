@@ -24,6 +24,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Enable OpenMP
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Found OpenMP: ${OpenMP_CXX_VERSION}")
+else()
+    message(FATAL_ERROR "OpenMP not found!")
+endif()
+
 # --- Find Packages ---
 # Find gRPC using CMake's find_package, request grpc++ component
 find_package(gRPC CONFIG REQUIRED COMPONENTS grpc++)
@@ -142,6 +150,7 @@ add_custom_target(generate_python_grpc ALL
 add_executable(matrix_server 
     proxy_server/proxy_server.cpp   # Main server file
     proxy_server/matrix_service.cpp # Service implementation file
+    proxy_server/matrix_operations.cpp # Matrix operations implementation
     proxy_server/object_manager.cpp # Object manager implementation file
     ${PROTO_SRCS} ${PROTO_HDRS}
     ${GRPC_SRCS} ${GRPC_HDRS} # Include manually generated gRPC sources/headers
@@ -162,6 +171,7 @@ target_link_libraries(matrix_server PUBLIC
     OpenSSL::SSL            # Explicitly link OpenSSL SSL
     OpenSSL::Crypto         # Explicitly link OpenSSL Crypto
     nlohmann_json::nlohmann_json  # JSON library from Conan
+    OpenMP::OpenMP_CXX      # OpenMP support
 )
 
 # Add dependency for Python generation (if needed, depends on workflow)

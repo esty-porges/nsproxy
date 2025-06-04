@@ -14,7 +14,8 @@ service MatrixService {
   // Gets the size of a matrix
   rpc GetMatrixSize (GetMatrixSizeRequest) returns (MatrixSizeResponse) {}
 
-  // Maybe add a DeleteMatrix RPC later
+  // Multiply two matrices and store the result in a new matrix
+  rpc MultiplyMatrices (MultiplyMatricesRequest) returns (MatrixInfoResponse) {}
 
   // Lists all currently registered objects.
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
@@ -62,6 +63,14 @@ message ListObjectsRequest {}
 message ObjectInfo {
   string name = 1;
   string type = 2; // Type as a string (e.g., "Matrix")
+}
+
+// Request message for MultiplyMatrices
+message MultiplyMatricesRequest {
+  string matrix_a_name = 1;     // Name of first input matrix
+  string matrix_b_name = 2;     // Name of second input matrix
+  string result_name = 3;       // Name for the result matrix
+  bool use_transpose = 4;       // Whether to use the transpose method
 }
 
 // Response message for ListObjects

@@ -27,6 +27,23 @@ class NSMatrix:
         """Returns the size of the matrix."""
         return self.rows, self.cols
 
+    def multiply(self, other: 'NSMatrix', result_name: str, use_transpose: bool = True) -> 'NSMatrix | None':
+        """
+        Multiply this matrix with another matrix on the server.
+        
+        Args:
+            other: The other matrix to multiply with.
+            result_name: The name for the resulting matrix.
+            use_transpose: Whether to use the transpose method for multiplication (usually faster).
+            
+        Returns:
+            A new NSMatrix object representing the result of multiplication, or None on failure.
+        """
+        # We'll implement this in NSProxy and call it from here
+        if not hasattr(self, '_proxy'):
+            raise RuntimeError("Matrix object not associated with a proxy")
+        return self._proxy.multiply_matrices(self, other, result_name, use_transpose)
+
 
 class NSProxy:
     """
@@ -64,7 +81,9 @@ class NSProxy:
 
             if response.success:
                 print(f"Successfully loaded matrix '{matrix_name}'.")
-                return NSMatrix(response.matrix_name, response.rows, response.cols)
+                matrix = NSMatrix(response.matrix_name, response.rows, response.cols)
+                matrix._proxy = self
+                return matrix
             else:
                 print(f"Server failed to load matrix '{matrix_name}': {response.error_message}")
                 return None
@@ -91,7 +110,9 @@ class NSProxy:
 
             if response.success:
                 print(f"Successfully created zero matrix '{matrix_name}'.")
-                return NSMatrix(response.matrix_name, response.rows, response.cols)
+                matrix = NSMatrix(response.matrix_name, response.rows, response.cols)
+                matrix._proxy = self
+                return matrix
             else:
                 print(f"Server failed to create zero matrix '{matrix_name}': {response.error_message}")
                 return None
@@ -122,6 +143,39 @@ class NSProxy:
                 return None
         except grpc.RpcError as e:
             print(f"gRPC Error getting size for matrix '{matrix_name}': {e.details()} (Status: {e.code()})")
+            return None
+
+    def multiply_matrices(self, matrix_a: NSMatrix, matrix_b: NSMatrix, result_name: str, use_transpose: bool = True) -> NSMatrix | None:
+        """
+        Multiply two matrices on the server and store the result in a new matrix.
+
+        Args:
+            matrix_a: First matrix to multiply.
+            matrix_b: Second matrix to multiply.
+            result_name: Name for the resulting matrix.
+            use_transpose: Whether to use the transpose method for multiplication (usually faster).
+
+        Returns:
+            A new NSMatrix object representing the result of multiplication, or None on failure.
+        """
+        print(f"Requesting multiplication of matrices '{matrix_a.name}' and '{matrix_b.name}' into '{result_name}'")
+        try:
+            request = matrix_service_pb2.MultiplyMatricesRequest(
+                matrix_a_name=matrix_a.name,
+                matrix_b_name=matrix_b.name,
+                result_name=result_name,
+                use_transpose=use_transpose
+            )
+            response = self.stub.MultiplyMatrices(request)
+
+            if response.success:
+                print(f"Successfully multiplied matrices into '{result_name}'.")
+                return NSMatrix(response.matrix_name, response.rows, response.cols)
+            else:
+                print(f"Server failed to multiply matrices: {response.error_message}")
+                return None
+        except grpc.RpcError as e:
+            print(f"gRPC Error multiplying matrices: {e.details()} (Status: {e.code()})")
             return None
 
     def close(self):
@@ -190,4 +244,15 @@ if __name__ == '__main__':
         size_info_nonexist = proxy.get_matrix_size("non_existent_matrix")
         if not size_info_nonexist:
             print("Correctly failed to get size for non-existent matrix.")
+            
+        # Test matrix multiplication if we have our test matrix and zero matrix
+        if matrix_obj and zero_matrix_obj:
+            # For testing, we'll multiply test_matrix with itself
+            result_matrix = matrix_obj.multiply(matrix_obj, "result_matrix", use_transpose=True)
+            if result_matrix:
+                print(f"Successfully created result matrix: {result_matrix}")
+                rows, cols = result_matrix.get_size()
+                print(f"Result matrix size: {rows}x{cols}")
+            else:
+                print("Failed to multiply matrices.")
 
