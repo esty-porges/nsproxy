@@ -7,7 +7,7 @@
 
 // Forward declaration or include the header for MatrixServiceImpl
 // Assuming MatrixServiceImpl is defined in matrix_service.cpp/h
-#include "matrix_service.h" // You might need to create this header
+#include "../include/matrix_service.h" // You might need to create this header
 
 using grpc::Server;
 using grpc::ServerBuilder;

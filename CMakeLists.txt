@@ -145,22 +145,23 @@ add_custom_target(generate_python_grpc ALL
     DEPENDS ${PYTHON_GEN_DIR}/matrix_service_pb2.py ${PYTHON_GEN_DIR}/matrix_service_pb2_grpc.py # Updated paths
 )
 
+# --- Find all source and header files ---
+file(GLOB_RECURSE SERVER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/proxy_server/src/*.cpp")
+file(GLOB_RECURSE SERVER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/proxy_server/include/proxy_server/*.h")
+
 # --- Build the Server Executable ---
-# Add executable and include generated sources directly
 add_executable(matrix_server 
-    proxy_server/proxy_server.cpp   # Main server file
-    proxy_server/matrix_service.cpp # Service implementation file
-    proxy_server/matrix_operations.cpp # Matrix operations implementation
-    proxy_server/object_manager.cpp # Object manager implementation file
+    ${SERVER_SOURCES}
     ${PROTO_SRCS} ${PROTO_HDRS}
-    ${GRPC_SRCS} ${GRPC_HDRS} # Include manually generated gRPC sources/headers
+    ${GRPC_SRCS} ${GRPC_HDRS}
 )
 
 # Add include directories
 target_include_directories(matrix_server PUBLIC
-    ${PROTO_GEN_DIR} # For generated headers
-    ${CMAKE_CURRENT_SOURCE_DIR}/proxy_server # For matrix_service.h
-    # Conan handles Protobuf/gRPC include dirs via targets
+    ${PROTO_GEN_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/proxy_server/include      # This allows #include "proxy_server/xxx.h"
+    ${CMAKE_CURRENT_SOURCE_DIR}/proxy_server/include      # This allows #include "xxx.h"
+    ${CMAKE_CURRENT_SOURCE_DIR}                          # For finding from project root
 )
 
 # Link libraries

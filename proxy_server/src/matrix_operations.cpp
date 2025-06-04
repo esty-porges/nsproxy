@@ -1,4 +1,4 @@
-#include "matrix_operations.h"
+#include "../include/matrix_operations.h"
 #include <omp.h>
 
 namespace matrix_ops {

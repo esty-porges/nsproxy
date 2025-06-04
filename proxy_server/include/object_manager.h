@@ -6,9 +6,17 @@
 #include <vector>
 #include <map>
 #include <mutex>
-#include <set> // Using set for simpler existence check and retrieval
+#include <set> 
 
 class ObjectManager {
+
+private:
+    // Private constructor for singleton
+    ObjectManager() = default;
+
+    std::set<std::string> registered_object_names_;
+    std::mutex mutex_; // Mutex to protect access to the set
+    
 public:
     // Get the singleton instance
     static ObjectManager& instance();
@@ -28,13 +36,6 @@ public:
     // Delete copy constructor and assignment operator
     ObjectManager(const ObjectManager&) = delete;
     ObjectManager& operator=(const ObjectManager&) = delete;
-
-private:
-    // Private constructor for singleton
-    ObjectManager() = default;
-
-    std::set<std::string> registered_object_names_;
-    std::mutex mutex_; // Mutex to protect access to the set
 };
 
 #endif // OBJECT_MANAGER_H
